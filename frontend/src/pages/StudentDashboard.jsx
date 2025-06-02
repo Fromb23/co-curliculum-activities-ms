@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import api from "../services/api";
 import {
   FiMessageSquare,
   FiCalendar,
@@ -117,13 +118,17 @@ const StudentDashboard = () => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const markAsRead = (id) => {
-    console.log("Marking message as read:", messages);
-    queryClient.setQueryData(["messages"], (oldData) =>
+  const markAsRead =  async (id) => {
+    try {
+      await api.put(`/comments/read-message/${id}`);
+      console.log("Marking message as read:", messages);
+      queryClient.setQueryData(["messages"], (oldData) =>
       oldData.map((msg) => (msg.id === id ? { ...msg, read: true } : msg))
     );
-    console.log("Marking message as read:", messages);
-  };
+  } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  }
 
   const {
     mutate,
@@ -191,7 +196,6 @@ const handleInlineReply = (messageId, replyText) => {
 // Component definitions
 const DashboardTab = () => (
     <>
-      {/* Stats Cards - Mobile responsive */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <DashboardCard
           icon={<FiMessageSquare className="text-blue-600" />}
@@ -299,7 +303,7 @@ const DashboardTab = () => (
           <ThreadItem 
             key={msg.id}
             message={msg}
-            onClick={(msg) => {
+            onClick={() => {
               // setSelectedMessage(msg);
               markAsRead(msg.id);
             }}
@@ -393,6 +397,7 @@ const DashboardTab = () => (
 
       <TrainerHeader
         role="student"
+        messages={messages}
         onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
       />
 

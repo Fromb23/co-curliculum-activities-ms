@@ -14,7 +14,7 @@ import {
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
-const UserHeader = () => {
+const UserHeader = ({ messages }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -30,8 +30,7 @@ const UserHeader = () => {
   const lastName = user?.fullName?.split(" ")?.slice(-1)[0] || "";
 
   const handleSignOut = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.clear();
     window.location.href = "/login";
   };
 
@@ -46,7 +45,7 @@ const UserHeader = () => {
   // Navigation items for students
   const studentNavItems = [
     { to: "/student-dashboard", icon: <FiHome />, text: "Dashboard" },
-    { to: "/my-schedule", icon: <FiCalendar />, text: "My Schedule" },
+    { to: "/schedule", icon: <FiCalendar />, text: "My Schedule" },
     { to: "/my-trainers", icon: <FiUser />, text: "My Trainers" },
     { to: "/achievements", icon: <FiAward />, text: "Achievements" },
   ];
@@ -98,19 +97,23 @@ const UserHeader = () => {
           {/* Right section - Profile and notifications */}
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center space-x-4">
-              {/* Notification icon */}
               <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative">
                 <FiBell className="h-6 w-6" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                {(messages ?? []).some(msg => !msg.read) && (
+                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                )}
               </button>
 
               {/* Messages icon - only for students */}
-              {isStudent && (
-                <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative">
-                  <FiMessageSquare className="h-6 w-6" />
-                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blue-500"></span>
-                </button>
-              )}
+              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative">
+                <FiMessageSquare className="h-6 w-6" />
+                {(messages ?? []).filter(msg => !msg.read).length > 0 && (
+                  <span className="absolute top-0 right-0 min-w-[18px] h-5 px-1 text-xs font-bold text-white bg-blue-500 rounded-full flex items-center justify-center">
+                    {(messages ?? []).filter(msg => !msg.read).length}
+                  </span>
+                )}
+              </button>
+
 
               {/* Profile dropdown */}
               <div className="ml-3 relative">
@@ -135,9 +138,8 @@ const UserHeader = () => {
                         </p>
                       </div>
                       <FiChevronDown
-                        className={`ml-1 text-gray-400 transition-transform duration-200 ${
-                          isProfileOpen ? "transform rotate-180" : ""
-                        }`}
+                        className={`ml-1 text-gray-400 transition-transform duration-200 ${isProfileOpen ? "transform rotate-180" : ""
+                          }`}
                       />
                     </div>
                   </button>
