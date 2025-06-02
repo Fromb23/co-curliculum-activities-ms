@@ -1,4 +1,5 @@
-import { ROLE } from "@prisma/client";
+import pkg from "@prisma/client";
+
 import prisma from "../config/db.js";
 import {
   studentEditSchema,
@@ -9,6 +10,8 @@ import {
 } from "../schema/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
+const { ROLE } = pkg;
 
 export const registerAdmin = async (req, res) => {
   try {

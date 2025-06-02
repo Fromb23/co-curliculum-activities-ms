@@ -178,3 +178,31 @@ res.status(200).json(comments);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const updateReadMessage = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+
+    // Check if the comment exists
+    const comment = await prisma.comment.findUnique({
+      where: { id: parseInt(commentId) },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+
+
+    // Update the readMessage field
+    const updatedComment = await prisma.comment.update({
+      where: { id: parseInt(commentId) },
+      data: { read: true },
+    });
+
+    res.status(200).json(updatedComment);
+  } catch (error) {
+    console.error("Error updating read message:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
