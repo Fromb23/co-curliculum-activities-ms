@@ -122,6 +122,7 @@ const StudentForm = ({ mode = "new", initialData = null }) => {
             value={studentData.role}
             onChange={handleChange}
             className="p-2 rounded-md border border-gray-300 focus:outline-blue-400"
+            disabled='true'
           >
             <option value="">Select Role</option>
             <option value="ADMIN">ADMIN</option>

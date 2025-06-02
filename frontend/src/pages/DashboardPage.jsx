@@ -48,7 +48,7 @@ const DashboardPage = () => {
       {/* Dashboard Header */}
       <div className="flex flex-col gap-4 mb-6 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-semibold text-[#3B82F6]">
-          Dashboard
+          Admin Panel
         </h1>
 
         {/* Stats Cards Grid */}

@@ -113,7 +113,7 @@ const ViewActivity = ({ userType = "" }) => {
   };
 
   return (
-    <div className="p-4 border rounded shadow">
+    <div className="p-4  rounded shadow">
       <h2 className="text-lg font-bold mb-2">
         {userType === "student" ? "Student Activities" : "Trainer Activities"}
       </h2>
@@ -165,7 +165,7 @@ const ViewActivity = ({ userType = "" }) => {
           ) : (
             availableActivities.map((act) => (
               <option key={act.id} value={act.id}>
-                {act.name} ({act.type})
+                -- {act.name}
               </option>
             ))
           )}
