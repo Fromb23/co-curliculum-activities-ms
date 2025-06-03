@@ -21,7 +21,8 @@ model Activity {
   schedule     Schedule[]
   comment      Comment[]
   announcement Announcement[]
-
+  report       Report[]
+  
   @@index([id, name])
   @@map("activities")
 }
@@ -142,6 +143,7 @@ model Report {
   id                Int       @id @default(autoincrement())
   studentId         Int
   trainerId         Int
+  activityId        Int
   title             String
   content           String
   performanceRating Float
@@ -150,6 +152,7 @@ model Report {
 
   student           Student   @relation(fields: [studentId], references: [id])
   trainer           Trainer   @relation(fields: [trainerId], references: [id])
+  activity          Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@index([studentId, trainerId])
   @@map("reports")
