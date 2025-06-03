@@ -6,6 +6,7 @@ import userRouter from "./routes/users.js";
 import scheduleRoutes from "./routes/schedules.js";
 import commentRoutes from "./routes/comments.js";
 import announcementRoutes from "./routes/announcements.js";
+import reportRoutes from "./routes/reports.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/reports", reportRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
