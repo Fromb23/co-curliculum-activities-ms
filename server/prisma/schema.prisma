@@ -61,6 +61,7 @@ model Trainer {
   activity     Activity[]
   comment      Comment[]
   announcement Announcement[]
+  report       Report[]
 
   @@index([id])
   @@map("trainers")
@@ -74,6 +75,7 @@ model Student {
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   activity   StudentActivity[]
   comment    Comment[]
+  report     Report[]
 
   @@index([id])
   @@map("students")
@@ -135,6 +137,22 @@ model Announcement {
   @@index([trainerId, activityId])
   @@map("announcements")
 }
+
+model Report {
+  id                Int       @id @default(autoincrement())
+  studentId         Int
+  trainerId         Int
+  title             String
+  content           String
+  performanceRating Float
+  date              DateTime  @default(now())
+  attachments       String?   // Or Json if storing multiple
+
+  student           Student   @relation(fields: [studentId], references: [id])
+  trainer           Trainer   @relation(fields: [trainerId], references: [id])
+}
+
+
 
 enum DAY {
   MONDAY
