@@ -146,7 +146,7 @@ model Report {
   content           String
   performanceRating Float
   date              DateTime  @default(now())
-  attachments       String?   // Or Json if storing multiple
+  attachments       String?
 
   student           Student   @relation(fields: [studentId], references: [id])
   trainer           Trainer   @relation(fields: [trainerId], references: [id])
