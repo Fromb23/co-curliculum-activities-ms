@@ -150,6 +150,9 @@ model Report {
 
   student           Student   @relation(fields: [studentId], references: [id])
   trainer           Trainer   @relation(fields: [trainerId], references: [id])
+
+  @@index([studentId, trainerId])
+  @@map("reports")
 }
 
 
