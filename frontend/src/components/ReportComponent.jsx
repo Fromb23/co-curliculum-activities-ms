@@ -1,59 +1,26 @@
 import React, { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import api from "../services/api";
 import {
   FiFileText,
   FiDownload,
   FiMail,
   FiPrinter,
   FiPlus,
-  FiChevronDown,
-  FiChevronUp,
   FiSearch,
   FiUser,
   FiCalendar,
-  FiHome,
-  FiBarChart2,
-  FiSettings,
   FiBell,
 } from "react-icons/fi";
 
-const ReportComponent = () => {
-  // Dummy data for reports
-  const [reports, setReports] = useState([
-    {
-      id: 1,
-      studentName: "John Doe",
-      studentId: "STU001",
-      date: "2023-05-15",
-      title: "Mid-term Progress Report",
-      content:
-        "John has shown excellent progress in football skills. His passing accuracy improved from 65% to 82% over the last month.",
-      performanceRating: 4.5,
-      attachments: ["skills_chart.pdf"],
-    },
-    {
-      id: 2,
-      studentName: "Sarah Smith",
-      studentId: "STU002",
-      date: "2023-05-10",
-      title: "Fitness Assessment",
-      content:
-        "Sarah has improved her endurance significantly. She can now run 5km in 22 minutes, down from 28 minutes last month.",
-      performanceRating: 4,
-      attachments: ["fitness_test_results.pdf"],
-    },
-    {
-      id: 3,
-      studentName: "Mike Johnson",
-      studentId: "STU003",
-      date: "2023-05-05",
-      title: "Technical Skills Evaluation",
-      content:
-        "Mike needs to work on his defensive positioning. His reaction time has improved but still below team average.",
-      performanceRating: 3,
-      attachments: ["positioning_analysis.pdf"],
-    },
-  ]);
-
+const ReportComponent = ({ studentData }) => {
+  const queryClient = useQueryClient();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredReports, setFilteredReports] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
   const [newReport, setNewReport] = useState({
     studentId: "",
     title: "",
@@ -61,11 +28,22 @@ const ReportComponent = () => {
     performanceRating: 3,
   });
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredReports, setFilteredReports] = useState(reports);
-  const [activeTab, setActiveTab] = useState("all");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const trainerId = user?.trainer?.id;
+
+  const { data: reports = [], isLoading } = useQuery({
+    queryKey: ["reports"],
+    queryFn: async () => {
+      const response = await api.get(`/reports/trainer/${trainerId}`);
+      console.log("Fetched reports:", response.data);
+      setFilteredReports(response.data);
+      return response.data;
+    },
+    enabled: !!trainerId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: false,
+  });
 
   // Filter reports based on search term
   const handleSearch = (term) => {
@@ -76,8 +54,8 @@ const ReportComponent = () => {
       setFilteredReports(
         reports.filter(
           (report) =>
-            report.studentName.toLowerCase().includes(term.toLowerCase()) ||
-            report.title.toLowerCase().includes(term.toLowerCase())
+            report.studentName?.toLowerCase().includes(term.toLowerCase()) ||
+            report.title?.toLowerCase().includes(term.toLowerCase())
         )
       );
     }
@@ -89,7 +67,6 @@ const ReportComponent = () => {
     if (tab === "all") {
       setFilteredReports(reports);
     } else if (tab === "recent") {
-      // Filter reports from the last 7 days
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
       setFilteredReports(
@@ -98,20 +75,40 @@ const ReportComponent = () => {
     }
   };
 
-  // Create new report
+  const createReportMutation = useMutation({
+    mutationFn: async (newReportObj) => {
+      const response = await api.post("/reports", newReportObj);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["reports"]);
+    },
+  });
+
   const handleCreateReport = () => {
+    const selectedStudent = students.find(
+      (student) => student.id === parseInt(newReport.studentId)
+    );
+
+    if (!selectedStudent) {
+      console.error("Student not found.");
+      return;
+    }
+
     const newReportObj = {
-      id: reports.length + 1,
-      studentName: "New Student", // In real app, get from studentId
-      studentId: newReport.studentId,
-      date: new Date().toISOString().split("T")[0],
+      studentId: selectedStudent.id,
+      trainerId: trainerId,
+      activityName: selectedStudent.activity || "General",
       title: newReport.title,
       content: newReport.content,
       performanceRating: newReport.performanceRating,
-      attachments: [],
+      date: new Date().toISOString().split("T")[0],
+      studentName: selectedStudent.name,
+      attachments: null,
     };
-    setReports([...reports, newReportObj]);
-    setFilteredReports([...reports, newReportObj]);
+
+    createReportMutation.mutate(newReportObj);
+
     setNewReport({
       studentId: "",
       title: "",
@@ -121,68 +118,35 @@ const ReportComponent = () => {
     setShowCreateForm(false);
   };
 
-  // Dummy function for sharing report
   const shareReport = (method, reportId) => {
     const report = reports.find((r) => r.id === reportId);
     alert(
-      `${method === "email" ? "Emailing" : "Downloading"} report: ${
-        report.title
-      } for ${report.studentName}`
+      `${method === "email" ? "Emailing" : "Downloading"} report: ${report?.title || "Untitled"}`
     );
   };
 
-  // Dummy students for dropdown
-  const students = [
-    { id: "STU001", name: "John Doe" },
-    { id: "STU002", name: "Sarah Smith" },
-    { id: "STU003", name: "Mike Johnson" },
-    { id: "STU004", name: "Emily Wilson" },
-    { id: "STU005", name: "David Brown" },
-  ];
+  const students = studentData?.map(s => ({
+    id: s.id,
+    name: s.user?.fullName || "Unknown Student",
+    activity: s.activity || "General"
+  })) || [];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-      <header className="bg-white shadow-sm mb-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              <FiFileText className="h-8 w-8 text-blue-600" />
-              <h1 className="ml-2 text-xl font-bold text-gray-900">
-                Student Reports
-              </h1>
-            </div>
-
-            <nav className="hidden md:flex space-x-8">
-              <a
-                href="#"
-                className="text-blue-600 border-blue-500 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Dashboard
-              </a>
-              <a
-                href="#"
-                className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Analytics
-              </a>
-              <a
-                href="#"
-                className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Settings
-              </a>
-            </nav>
-
-            <div className="flex items-center">
-              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
-                <span className="sr-only">Notifications</span>
-                <FiBell className="h-6 w-6" />
-              </button>
-              {/* User profile dropdown would go here */}
-            </div>
-          </div>
+      {/* Header with notification bell */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <FiFileText className="h-8 w-8 text-blue-600" />
+          <h1 className="ml-2 text-xl font-bold text-gray-900">
+            Student Reports
+          </h1>
         </div>
-      </header>
+        <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
+          <span className="sr-only">Notifications</span>
+          <FiBell className="h-6 w-6" />
+        </button>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h2 className="text-xl font-semibold mb-4 md:mb-0">Student Reports</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -329,7 +293,9 @@ const ReportComponent = () => {
       </div>
 
       {/* Reports List */}
-      {filteredReports.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8">Loading reports...</div>
+      ) : filteredReports.length > 0 ? (
         <div className="space-y-4">
           {filteredReports.map((report) => (
             <div
@@ -343,17 +309,17 @@ const ReportComponent = () => {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-lg">{report.title}</h3>
+                  <h3 className="font-medium text-lg">{report.title || "Untitled Report"}</h3>
                   <div className="flex items-center text-sm text-gray-600 mt-1">
                     <FiUser className="mr-1" />
-                    <span className="mr-3">{report.studentName}</span>
+                    <span className="mr-3">{report?.student?.user?.fullName || "Unknown Student"}</span>
                     <FiCalendar className="mr-1" />
-                    <span>{report.date}</span>
+                  <span>{new Date(report.date).toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
-                    {report.performanceRating} ★
+                    {report.performanceRating || 0} ★
                   </div>
                 </div>
               </div>
@@ -361,7 +327,7 @@ const ReportComponent = () => {
                 <div className="mt-4">
                   <div className="bg-white p-4 rounded-lg border border-gray-200">
                     <h4 className="font-medium mb-2">Report Details</h4>
-                    <p className="text-gray-700 mb-4">{report.content}</p>
+                    <p className="text-gray-700 mb-4">{report.content || "No content provided"}</p>
                     {report.attachments && report.attachments.length > 0 && (
                       <div className="mb-4">
                         <h5 className="text-sm font-medium text-gray-700 mb-2">
@@ -438,33 +404,6 @@ const ReportComponent = () => {
           </button>
         </div>
       )}
-      <footer className="bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="md:flex md:items-center md:justify-between">
-            <div className="flex justify-center md:order-2 space-x-6">
-              <a href="#" className="text-gray-400 hover:text-gray-500">
-                <span className="sr-only">Help</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </a>
-            </div>
-            <div className="mt-8 md:mt-0 md:order-1">
-              <p className="text-center text-base text-gray-400">
-                &copy; 2023 Athletic Training System. All rights reserved.
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

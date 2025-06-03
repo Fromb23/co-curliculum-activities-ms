@@ -287,7 +287,7 @@ const TrainerDashboard = () => {
 
   const components = {
     dashboard: <DashboardHome />,
-    reports: <ReportComponent />,
+    reports: <ReportComponent studentData={studentData} />,
     messages: <MessagesComponent comments={comments} />,
     schedule: <ScheduleComponent />,
   };
