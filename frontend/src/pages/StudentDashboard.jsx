@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import {
   FiMessageSquare,
@@ -27,9 +27,9 @@ import {
   fetchCommentsByStudentId,
   fetchTrainerByTrainerId,
 } from "../services/comments";
-import  ThreadItem  from "../components/ThreadItem";
-import  MessageThreadModal  from "../components/MessageThreadModal";
-import  {organizeMessagesIntoThreads}  from "../components/utilis";
+import ThreadItem from "../components/ThreadItem";
+import MessageThreadModal from "../components/MessageThreadModal";
+import { organizeMessagesIntoThreads } from "../components/utilis";
 
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -74,11 +74,13 @@ const StudentDashboard = () => {
     refetchOnMount: false,
   });
 
-//   const messages = useMemo(() => {
-//     console.log("Raw Messages:", rawMessages);
-//   if (!rawMessages) return [];
-//   return buildThreadTree(rawMessages);
-// }, [rawMessages]);
+
+
+  //   const messages = useMemo(() => {
+  //     console.log("Raw Messages:", rawMessages);
+  //   if (!rawMessages) return [];
+  //   return buildThreadTree(rawMessages);
+  // }, [rawMessages]);
 
   const trainerId = messages.length > 0 ? messages[0].trainerId : null;
   const { data: trainerName, isLoading: trainerLoading } = useQuery({
@@ -118,14 +120,14 @@ const StudentDashboard = () => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const markAsRead =  async (id) => {
+  const markAsRead = async (id) => {
     try {
       await api.put(`/comments/read-message/${id}`);
       console.log("Marking message as read:", messages);
       queryClient.setQueryData(["messages"], (oldData) =>
-      oldData.map((msg) => (msg.id === id ? { ...msg, read: true } : msg))
-    );
-  } catch (error) {
+        oldData.map((msg) => (msg.id === id ? { ...msg, read: true } : msg))
+      );
+    } catch (error) {
       console.error("Error marking message as read:", error);
     }
   }
@@ -155,22 +157,22 @@ const StudentDashboard = () => {
 
   const handleSendMessage = (text, parentId) => {
     console.log("Sending message:", newMessage);
-  if (text.trim() || newMessage.trim()) {
-    mutate({
-      comment: text,
-      studentId: user.student.id,
-      activityId: activities[0].id,
-      senderType: user.role,
-      userId: activities[0].trainerUser?.id,
-      parentId: parentId || replyingToId,
-    });
-    setNewMessage("");
-    setReplyingToId(null);
-    if (!selectedMessage) {
-      setShowMessageModal(false);
+    if (text.trim() || newMessage.trim()) {
+      mutate({
+        comment: text,
+        studentId: user.student.id,
+        activityId: activities[0].id,
+        senderType: user.role,
+        userId: activities[0].trainerUser?.id,
+        parentId: parentId || replyingToId,
+      });
+      setNewMessage("");
+      setReplyingToId(null);
+      if (!selectedMessage) {
+        setShowMessageModal(false);
+      }
     }
-  }
-};
+  };
 
   const handleCreateAnnouncement = (content) => {
     const newAnnouncement = {
@@ -183,18 +185,18 @@ const StudentDashboard = () => {
     setShowAnnouncementModal(false);
   };
 
-  
 
-// Add this handler for inline replies
-const handleInlineReply = (messageId, replyText) => {
-   console.log("Reply text before send:", replyText);
-   console.log("Message ID for reply:", messageId);
-  handleSendMessage(replyText, messageId);
-  console.log("Sending message in inline:", newMessage);
-};
 
-// Component definitions
-const DashboardTab = () => (
+  // Add this handler for inline replies
+  const handleInlineReply = (messageId, replyText) => {
+    console.log("Reply text before send:", replyText);
+    console.log("Message ID for reply:", messageId);
+    handleSendMessage(replyText, messageId);
+    console.log("Sending message in inline:", newMessage);
+  };
+
+  // Component definitions
+  const DashboardTab = () => (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <DashboardCard
@@ -275,63 +277,65 @@ const DashboardTab = () => (
   );
 
   const MessagesTab = () => {
-  const threads = organizeMessagesIntoThreads(messages);
+    const threads = organizeMessagesIntoThreads(messages);
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 className="text-lg font-semibold flex items-center">
-          <FiMessageSquare className="mr-2 text-blue-600" />
-          Message Threads
-        </h2>
-        <button
-          onClick={() => {
-            setSelectedMessage(null);
-            setShowMessageModal(true);
-          }}
-          className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-        >
-          <FiPlus className="mr-1" /> New Message
-        </button>
-      </div>
-
-      <div className="divide-y divide-gray-200">
-        {threads.length === 0 ? (
-          <p className="text-center text-gray-500 p-4">No messages available</p>
-        ) : (
-          threads.map((msg) => (
-          <ThreadItem 
-            key={msg.id}
-            message={msg}
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-lg font-semibold flex items-center">
+            <FiMessageSquare className="mr-2 text-blue-600" />
+            Message Threads
+          </h2>
+          <button
             onClick={() => {
-              // setSelectedMessage(msg);
-              markAsRead(msg.id);
+              setSelectedMessage(null);
+              setShowMessageModal(true);
             }}
-            trainerName={trainerName?.fullName || "Coach"}
-            depth={0}
-            onReply={handleInlineReply}
-            isActiveThread={selectedMessage?.id === msg.id}
-            selectedMessageId={selectedMessage?.id} 
-          />
+            className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+          >
+            <FiPlus className="mr-1" /> New Message
+          </button>
+        </div>
 
-          ))
-        )}
+        <div className="divide-y divide-gray-200">
+          {threads.length === 0 ? (
+            <p className="text-center text-gray-500 p-4">No messages available</p>
+          ) : (
+            threads.map((msg) => (
+              <ThreadItem
+                key={msg.id}
+                message={msg}
+                onClick={() => {
+                  // setSelectedMessage(msg);
+                  markAsRead(msg.id);
+                }}
+                trainerName={trainerName?.fullName || "Coach"}
+                depth={0}
+                onReply={handleInlineReply}
+                isActiveThread={selectedMessage?.id === msg.id}
+                selectedMessageId={selectedMessage?.id}
+              />
+
+            ))
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-// Replace the old message modal with:
-{selectedMessage && (
-  <MessageThreadModal
-    selectedMessage={selectedMessage}
-    setSelectedMessage={setSelectedMessage}
-    newMessage={newMessage}
-    setNewMessage={setNewMessage}
-    handleSendMessage={handleSendMessage}
-    trainerName={trainerName?.fullName || "Coach"}
-  />
-)}
+  // Replace the old message modal with:
+  {
+    selectedMessage && (
+      <MessageThreadModal
+        selectedMessage={selectedMessage}
+        setSelectedMessage={setSelectedMessage}
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        handleSendMessage={handleSendMessage}
+        trainerName={trainerName?.fullName || "Coach"}
+      />
+    )
+  }
 
   const ScheduleTab = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
@@ -419,11 +423,10 @@ const DashboardTab = () => (
                     setActiveTab(tab.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left p-3 rounded-lg flex items-center ${
-                    activeTab === tab.id
+                  className={`w-full text-left p-3 rounded-lg flex items-center ${activeTab === tab.id
                       ? "bg-blue-50 text-blue-600"
                       : "hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <span className="text-xl mr-3">{tab.icon}</span>
                   <span>{tab.label}</span>
@@ -442,11 +445,10 @@ const DashboardTab = () => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center p-3 rounded-lg text-left ${
-                  activeTab === tab.id
+                className={`w-full flex items-center p-3 rounded-lg text-left ${activeTab === tab.id
                     ? "bg-blue-50 text-blue-600 font-medium"
                     : "text-gray-600 hover:bg-gray-100"
-                }`}
+                  }`}
               >
                 <span className="text-lg mr-3">{tab.icon}</span>
                 <span>{tab.label}</span>
@@ -511,7 +513,7 @@ const DashboardTab = () => (
                   {/* Assuming `createdAt` is the timestamp */}
                 </div>
               </div>
-            
+
               {/* <div className="p-4 border-t border-gray-200">
                 <textarea
                   value={newMessage}
@@ -536,10 +538,10 @@ const DashboardTab = () => (
                   </button>
                 </div>
               </div> */}
-           
+
             </motion.div>
           </motion.div>
- 
+
         )}
       </AnimatePresence>
 
@@ -607,11 +609,10 @@ const DashboardTab = () => (
                 <button
                   onClick={() => handleSendMessage(newMessage, replyingToId)}
                   disabled={!selectedTrainer || !newMessage.trim()}
-                  className={`px-4 py-2 rounded-lg text-white ${
-                    !selectedTrainer || !newMessage.trim()
+                  className={`px-4 py-2 rounded-lg text-white ${!selectedTrainer || !newMessage.trim()
                       ? "bg-blue-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                    }`}
                 >
                   Send Message
                 </button>
@@ -780,9 +781,8 @@ const AnnouncementCard = ({ announcement }) => (
 
 const MessageItem = ({ message, onClick, trainerName = "Coach unknown" }) => (
   <div
-    className={`p-4 cursor-pointer ${
-      !message.read ? "bg-blue-50" : "hover:bg-gray-50"
-    }`}
+    className={`p-4 cursor-pointer ${!message.read ? "bg-blue-50" : "hover:bg-gray-50"
+      }`}
     onClick={onClick}
   >
     <div className="flex justify-between">
